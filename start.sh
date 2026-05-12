@@ -13,7 +13,7 @@ sleep 20
 echo "🌍 [4/4] Aplicando aislamiento geográfico y cargando datos..."
 
 # 1. Ejecutamos distribute.sql capturando salida (stdout y stderr)
-OUT_DIST=$(docker exec -i citus_master psql -v ON_ERROR_STOP=1 -U ezequiel -d universidad_distribuida < 03-distribute.sql 2>&1)
+OUT_DIST=$(docker exec -i citus_master psql -v ON_ERROR_STOP=1 -U ezequiel -d universidad_distribuida < post-init/03-distribute.sql 2>&1)
 
 # Comprobamos si el comando falló
 if [ $? -ne 0 ]; then
@@ -23,7 +23,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # 2. Ejecutamos data.sql capturando salida
-OUT_DATA=$(docker exec -i citus_master psql -v ON_ERROR_STOP=1 -U ezequiel -d universidad_distribuida < 04-data.sql 2>&1)
+OUT_DATA=$(docker exec -i citus_master psql -v ON_ERROR_STOP=1 -U ezequiel -d universidad_distribuida < post-init/04-data.sql 2>&1)
 
 if [ $? -ne 0 ]; then
     echo "❌ ERROR durante la carga de datos (04-data.sql):"
