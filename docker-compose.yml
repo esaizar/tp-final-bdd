@@ -1,0 +1,52 @@
+
+# 1. Definimos una red específica para aislar el entorno
+networks:
+  bdd_net:
+    driver: bridge
+    name: citus_bdd_network # Nombre explícito en el host
+
+services:
+  # ==========================================
+  # NODOS TRABAJADORES (Se levantan primero)
+  # ==========================================
+  worker_ush:
+    container_name: citus_worker_ushuaia
+    image: citusdata/citus:12.1
+    networks:
+      - bdd_net
+    labels: [ "sede=ushuaia" ]
+    environment: &AUTH
+      POSTGRES_USER: ezequiel
+      POSTGRES_PASSWORD: password_bdd
+      POSTGRES_DB: universidad_distribuida
+    command: ["postgres", "-c", "wal_level=logical"]
+    # No exponemos puertos al host para obligar a que todo pase por el Master
+
+  worker_rg:
+    container_name: citus_worker_riogrande
+    image: citusdata/citus:12.1
+    networks:
+      - bdd_net
+    labels: [ "sede=riogrande" ]
+    environment: *AUTH
+    command: ["postgres", "-c", "wal_level=logical"]
+
+  # ==========================================
+  # NODO COORDINADOR / MASTER
+  # ==========================================
+  master:
+    container_name: citus_master
+    image: citusdata/citus:12.1
+    networks:
+      - bdd_net
+    ports:
+      - "5532:5432" # Solo el Master se expone a tu máquina (DBeaver, pgAdmin, etc.)
+    environment: *AUTH
+    # 2. El Master espera a que los workers estén arriba
+    depends_on:
+      - worker_ush
+      - worker_rg
+    # Mapeamos la carpeta local al directorio de inicialización de Postgres
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d
+    command: ["postgres", "-c", "wal_level=logical"]
